@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #0a0705;
+  --foreground: #f5e6d3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #0a0705;
+  color: var(--foreground);
+  font-family: var(--font-outfit), sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-sora), sans-serif;
+}
+
+/* -- Premium scrollbar -- */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0705; }
+::-webkit-scrollbar-thumb { background: #78350f; border-radius: 99px; }
+
+/* -- Noise texture overlay -- */
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  opacity: 0.4;
+}
+
+/* -- Page content above noise -- */
+body > * { position: relative; z-index: 1; }
+
+/* -- Gradient background blobs (injected via ::after on main wrapper) -- */
+.page-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 80% 10%, rgba(180, 83, 9, 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(120, 53, 15, 0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 60% at 50% 50%, rgba(251, 191, 36, 0.04) 0%, transparent 70%),
+    #0a0705;
+}
+
+/* -- Card hover lift -- */
+.card-lift {
+  transition: transform 0.3s cubic-bezier(.22,.68,0,1.2), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.card-lift:hover {
+  transform: translateY(-6px) scale(1.01);
+  border-color: rgba(251, 191, 36, 0.3);
+  box-shadow: 0 20px 60px rgba(180, 83, 9, 0.25);
+}
+
+/* -- Shimmer effect for skeleton/badges -- */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(251,191,36,0.15) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite;
+}
+
+/* -- Float animation -- */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(1deg); }
+  66% { transform: translateY(-5px) rotate(-1deg); }
+}
+.float { animation: float 6s ease-in-out infinite; }
+
+/* -- Pulse glow -- */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(251, 191, 36, 0); }
+}
+.pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* -- Fade-in-up animation -- */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up 0.55s ease both; }
+.fade-up-d1 { animation: fade-up 0.55s 0.1s ease both; }
+.fade-up-d2 { animation: fade-up 0.55s 0.2s ease both; }
+.fade-up-d3 { animation: fade-up 0.55s 0.3s ease both; }
+.fade-up-d4 { animation: fade-up 0.55s 0.4s ease both; }
+
+/* -- Spin slow (kept for optional use, now less prominent) -- */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spin-slow { animation: spin-slow 12s linear infinite; }
+
+/* -- Star rating fill -- */
+.star-filled { color: #fbbf24; }
+.star-empty  { color: #44312a; }
+
+/* -- Glass card base -- */
+.glass {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+}
+
+/* -- Gradient text -- */
+.gradient-text {
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* -- Amber glow button -- */
+.btn-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: #0a0705;
+  font-weight: 800;
+  border-radius: 9999px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.btn-amber:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(249, 115, 22, 0.5);
+  filter: brightness(1.05);
+}
+.btn-amber:active {
+  transform: translateY(0);
+}
+
+/* -- Input focus ring -- */
+.input-field {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #f5e6d3;
+  border-radius: 0.875rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+.input-field::placeholder { color: rgba(245,230,211,0.35); }
+.input-field:focus {
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.12);
+}
+
+/* -- Category pill active -- */
+.cat-active {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #0a0705;
+  font-weight: 700;
+}
+.cat-idle {
+  background: rgba(255,255,255,0.05);
+  color: rgba(245,230,211,0.7);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.cat-idle:hover {
+  background: rgba(255,255,255,0.1);
+  color: #f5e6d3;
+}
