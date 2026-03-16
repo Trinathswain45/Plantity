@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/AuthContext";
 
 const EMPTY_FORM = { name: "", email: "", phone: "", address: "", notes: "" };
 
 const MOCK_ORDERS = [
-  { id: "#PL-1042", date: "08 Mar 2026", status: "Delivered", total: "INR 1320", items: "Truffle Pizza, Burger" },
-  { id: "#PL-1038", date: "05 Mar 2026", status: "Delivered", total: "INR 749", items: "Dragon Sushi Set" },
-  { id: "#PL-1031", date: "01 Mar 2026", status: "Delivered", total: "INR 1087", items: "Korean Bowl, Tenders, Lava" },
+  { id: "#PL-1042", date: "08 Mar 2026", status: "Delivered", total: "? 1320", items: "Truffle Pizza, Burger" },
+  { id: "#PL-1038", date: "05 Mar 2026", status: "Delivered", total: "? 749", items: "Dragon Sushi Set" },
+  { id: "#PL-1031", date: "01 Mar 2026", status: "Delivered", total: "? 1087", items: "Korean Bowl, Tenders, Lava" },
 ];
 
 const FIELDS = [
@@ -20,6 +21,9 @@ const FIELDS = [
 export default function ProfilePage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saved, setSaved] = useState(false);
+  const [orders, setOrders] = useState(MOCK_ORDERS);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const { token, openAuth } = useAuth();
 
   useEffect(() => {
     try {
@@ -27,6 +31,38 @@ export default function ProfilePage() {
       if (raw) setForm(JSON.parse(raw));
     } catch {}
   }, []);
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      if (!token) return;
+      setLoadingOrders(true);
+      try {
+        const res = await fetch("/api/orders", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.orders)) {
+          const mapped = data.orders.map((order) => ({
+            id: `#${order._id}`,
+            date: new Date(order.createdAt).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }),
+            status: order.status || "Pending",
+            total: `? ${Math.round(order.totals?.total || 0)}`,
+            items: order.items?.map((item) => item.name).join(", ") || "",
+          }));
+          setOrders(mapped);
+        }
+      } catch {
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    loadOrders();
+  }, [token]);
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -124,48 +160,61 @@ export default function ProfilePage() {
 
         {/* Orders section */}
         <section className="space-y-5 fade-up-d1">
-          <div>
-            <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "rgba(251,191,36,0.7)" }}>
-              History
-            </p>
-            <h2 className="text-2xl font-black" style={{ color: "#f5e6d3" }}>Recent Orders</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "rgba(251,191,36,0.7)" }}>
+                History
+              </p>
+              <h2 className="text-2xl font-black" style={{ color: "#f5e6d3" }}>Recent Orders</h2>
+            </div>
+            {!token && (
+              <button onClick={openAuth} className="btn-amber px-4 py-2 text-xs font-black">
+                Sign in to view
+              </button>
+            )}
           </div>
 
-          <div className="space-y-3">
-            {MOCK_ORDERS.map((order, i) => (
-              <div key={order.id}
-                className="flex flex-col gap-3 rounded-2xl p-5 card-lift sm:flex-row sm:items-center sm:justify-between"
-                style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  animationDelay: `${i * 80}ms`,
-                }}>
-                <div className="flex items-center gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl text-xs font-black"
-                    style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.15)" }}>
-                    MEAL
+          {loadingOrders ? (
+            <div className="rounded-2xl p-6 text-sm" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              Loading orders...
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {orders.map((order, i) => (
+                <div key={order.id}
+                  className="flex flex-col gap-3 rounded-2xl p-5 card-lift sm:flex-row sm:items-center sm:justify-between"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    animationDelay: `${i * 80}ms`,
+                  }}>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl text-xs font-black"
+                      style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.15)" }}>
+                      MEAL
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm" style={{ color: "#f5e6d3" }}>{order.id}</p>
+                      <p className="text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>{order.items}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-sm" style={{ color: "#f5e6d3" }}>{order.id}</p>
-                    <p className="text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>{order.items}</p>
-                  </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <span style={{ color: "rgba(245,230,211,0.5)" }}>{order.date}</span>
-                  <span className="font-black gradient-text">{order.total}</span>
-                  <span className="rounded-full px-3 py-1 text-xs font-bold"
-                    style={{ background: "rgba(74,222,128,0.1)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }}>
-                    OK {order.status}
-                  </span>
-                  <button className="text-xs font-semibold underline-offset-2 hover:underline"
-                    style={{ color: "rgba(251,191,36,0.7)" }}>
-                    Reorder
-                  </button>
+                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <span style={{ color: "rgba(245,230,211,0.5)" }}>{order.date}</span>
+                    <span className="font-black gradient-text">{order.total}</span>
+                    <span className="rounded-full px-3 py-1 text-xs font-bold"
+                      style={{ background: "rgba(74,222,128,0.1)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }}>
+                      OK {order.status}
+                    </span>
+                    <button className="text-xs font-semibold underline-offset-2 hover:underline"
+                      style={{ color: "rgba(251,191,36,0.7)" }}>
+                      Reorder
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Preferences / Quick info */}

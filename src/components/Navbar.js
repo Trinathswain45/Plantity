@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/components/CartContext";
+import { useAuth } from "@/components/AuthContext";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { summary: { itemCount } } = useCart();
+  const { user, openAuth, signOut } = useAuth();
 
   const links = [
     { href: "/", label: "Menu" },
@@ -23,13 +25,20 @@ export default function Navbar() {
           <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl btn-amber text-base font-black shadow-lg shadow-orange-500/20">
             <span className="relative z-10">PL</span>
           </div>
-          <div>
-            <p className="text-[1.1rem] font-black tracking-wide" style={{ color: "#f5e6d3" }}>
-              Plantity
-            </p>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.15em]" style={{ color: "rgba(251,191,36,0.7)" }}>
-              Premium Delivery
-            </p>
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: "rgba(34,197,94,0.2)", border: "1px solid rgba(34,197,94,0.35)" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 15c6-1 9-5 12-11 1 7-2 14-9 16-3 1-6-1-6-5 0-3 1-5 3-7" stroke="#4ade80" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-[1.1rem] font-black tracking-wide" style={{ color: "#f5e6d3" }}>
+                Plantity
+              </p>
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.15em]" style={{ color: "rgba(251,191,36,0.7)" }}>
+                Premium Delivery
+              </p>
+            </div>
           </div>
         </Link>
 
@@ -65,6 +74,18 @@ export default function Navbar() {
             <span className="h-2 w-2 rounded-full bg-green-400 pulse-glow inline-block" />
             Open - Delivers in 25-35 min
           </div>
+          {user ? (
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold" style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)" }}>
+              <span>{user.email || user.phone}</span>
+              <button onClick={signOut} className="text-[10px] font-bold uppercase" style={{ color: "rgba(245,230,211,0.7)" }}>
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <button onClick={openAuth} className="btn-amber px-4 py-2 text-xs font-black">
+              Sign in
+            </button>
+          )}
         </div>
       </div>
     </header>

@@ -109,7 +109,7 @@ export default function FoodCard({ item, index = 0 }) {
 
         <div className="flex items-center justify-between pt-1">
           <div>
-            <p className="text-xl font-black gradient-text">INR {item.price}</p>
+            <p className="text-xl font-black gradient-text">? {item.price}</p>
             {inCart && (
               <p className="text-[10px] font-semibold" style={{ color: "rgba(251,191,36,0.7)" }}>
                 {inCart.quantity} in cart

@@ -2,14 +2,49 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { useCart } from "@/components/CartContext";
+import { useAuth } from "@/components/AuthContext";
 
 function money(v) {
-  return `INR ${Math.round(v)}`;
+  return `? ${Math.round(v)}`;
 }
 
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart, clearCart, summary } = useCart();
+  const { token, openAuth } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleCheckout = async () => {
+    if (!token) {
+      openAuth();
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          items: cart,
+          totals: summary,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Checkout failed");
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      setError(err.message || "Checkout failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="page-bg min-h-screen">
@@ -74,7 +109,7 @@ export default function CartPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold" style={{ color: "#f5e6d3" }}>{item.name}</p>
                     <p className="text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>{item.category}</p>
-                    <p className="mt-1 text-sm font-black gradient-text">INR {item.price} each</p>
+                    <p className="mt-1 text-sm font-black gradient-text">? {item.price} each</p>
                   </div>
 
                   {/* Qty + remove */}
@@ -97,7 +132,7 @@ export default function CartPage() {
                     </div>
 
                     <p className="text-xs font-black" style={{ color: "#fbbf24" }}>
-                      INR {item.price * item.quantity}
+                      ? {item.price * item.quantity}
                     </p>
 
                     <button onClick={() => removeFromCart(item.id)}
@@ -141,13 +176,23 @@ export default function CartPage() {
                 {summary.subtotal < 499 && (
                   <div className="rounded-xl p-3 text-xs font-semibold text-center"
                     style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.15)", color: "rgba(251,191,36,0.85)" }}>
-                    Add INR {499 - Math.round(summary.subtotal)} more for FREE delivery!
+                    Add ? {499 - Math.round(summary.subtotal)} more for FREE delivery!
                   </div>
                 )}
 
-                <button className="btn-amber w-full py-4 text-sm font-black shadow-xl shadow-orange-500/30 pulse-glow">
-                  Place Order - {money(summary.total)}
+                <button
+                  onClick={handleCheckout}
+                  disabled={loading}
+                  className="btn-amber w-full py-4 text-sm font-black shadow-xl shadow-orange-500/30 pulse-glow"
+                >
+                  {loading ? "Redirecting..." : `Place Order - ${money(summary.total)}`}
                 </button>
+
+                {error && (
+                  <div className="rounded-xl p-3 text-xs font-semibold" style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>
+                    {error}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-center gap-2 text-xs"
                   style={{ color: "rgba(245,230,211,0.4)" }}>
