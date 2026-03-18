@@ -32,6 +32,7 @@ export async function POST(req) {
     return NextResponse.json({ ok: true, channel });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to send code" }, { status: 500 });
+    const detail = process.env.NODE_ENV !== "production" ? error?.message : undefined;
+    return NextResponse.json({ error: "Failed to send code", detail }, { status: 500 });
   }
 }

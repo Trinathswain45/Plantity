@@ -28,12 +28,24 @@ function getTwilioClient() {
 export async function sendOtp({ email, phone, code }) {
   if (email && hasEmailConfig()) {
     const transporter = getTransporter();
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || "no-reply@plantity.com",
-      to: email,
-      subject: "Your Plantity sign-in code",
-      text: `Your one-time sign-in code is ${code}. It expires in 5 minutes.`,
-    });
+    try {
+      if (process.env.NODE_ENV !== "production") {
+        await transporter.verify();
+      }
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || "no-reply@plantity.com",
+        to: email,
+        subject: "Your Plantity sign-in code",
+        text: `Your one-time sign-in code is ${code}. It expires in 5 minutes.`,
+      });
+    } catch (error) {
+      console.error("SMTP sendOtp failed", {
+        message: error?.message,
+        code: error?.code,
+        response: error?.response,
+      });
+      throw error;
+    }
     return { channel: "email" };
   }
 
@@ -54,12 +66,24 @@ export async function sendOtp({ email, phone, code }) {
 export async function sendOrderUpdate({ email, phone, subject, message }) {
   if (email && hasEmailConfig()) {
     const transporter = getTransporter();
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || "no-reply@plantity.com",
-      to: email,
-      subject,
-      text: message,
-    });
+    try {
+      if (process.env.NODE_ENV !== "production") {
+        await transporter.verify();
+      }
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || "no-reply@plantity.com",
+        to: email,
+        subject,
+        text: message,
+      });
+    } catch (error) {
+      console.error("SMTP sendOrderUpdate failed", {
+        message: error?.message,
+        code: error?.code,
+        response: error?.response,
+      });
+      throw error;
+    }
     return { channel: "email" };
   }
 
