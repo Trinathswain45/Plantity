@@ -28,7 +28,9 @@ export default function AuthModal() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send code");
-      setChannel(data.channel || "");
+      const channelValue =
+        typeof data.channel === "string" ? data.channel : data.channel?.channel || "";
+      setChannel(channelValue);
       setStep("verify");
     } catch (err) {
       setError(err.message || "Failed to send code");

@@ -27,7 +27,9 @@ export async function POST(req) {
       used: false,
     });
 
-    const channel = await sendOtp({ email, phone, code });
+    const channelResult = await sendOtp({ email, phone, code });
+    const channel =
+      typeof channelResult === "string" ? channelResult : channelResult?.channel || "unknown";
 
     return NextResponse.json({ ok: true, channel });
   } catch (error) {
