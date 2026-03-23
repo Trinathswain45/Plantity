@@ -9,6 +9,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const { summary: { itemCount } } = useCart();
   const { user, openAuth, signOut } = useAuth();
+  const profileInitial = (user?.email || user?.phone || "U").trim().charAt(0).toUpperCase();
 
   const links = [
     { href: "/", label: "Menu" },
@@ -75,11 +76,19 @@ export default function Navbar() {
             Open - Delivers in 25-35 min
           </div>
           {user ? (
-            <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold" style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)" }}>
-              <span>{user.email || user.phone}</span>
-              <button onClick={signOut} className="text-[10px] font-bold uppercase" style={{ color: "rgba(245,230,211,0.7)" }}>
-                Sign out
-              </button>
+            <div className="flex items-center gap-3 rounded-2xl px-3 py-2 text-xs font-semibold"
+              style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)" }}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-black"
+                style={{ background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#0a0705" }}>
+                {profileInitial}
+              </div>
+              <div className="flex flex-col">
+                <span style={{ color: "#f5e6d3" }}>{user.email || user.phone}</span>
+                <button onClick={signOut} className="text-[10px] font-bold uppercase"
+                  style={{ color: "rgba(245,230,211,0.7)" }}>
+                  Sign out
+                </button>
+              </div>
             </div>
           ) : (
             <button onClick={openAuth} className="btn-amber px-4 py-2 text-xs font-black">

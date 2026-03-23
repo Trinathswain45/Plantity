@@ -14,12 +14,20 @@ export async function POST(req) {
     const items = body?.items || [];
     const totals = body?.totals || {};
     const delivery = body?.delivery || {};
+    const paymentMethod = body?.paymentMethod || "cod";
+    const paymentMeta = body?.paymentMeta || {};
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Items are required" }, { status: 400 });
     }
 
     const db = await getDb();
+    const statusByMethod = {
+      cod: "cod_pending",
+      upi: "upi_pending",
+      razorpay: "payment_pending",
+    };
+
     const order = {
       userId: user.sub,
       email: user.email || null,
@@ -27,17 +35,26 @@ export async function POST(req) {
       items,
       totals,
       delivery,
-      status: "pending",
+      paymentMethod,
+      paymentMeta,
+      status: statusByMethod[paymentMethod] || "pending",
       createdAt: new Date(),
     };
 
     const result = await db.collection("orders").insertOne(order);
 
+    const methodLabel = paymentMethod === "cod" ? "Cash On Delivery" : paymentMethod === "upi" ? "UPI" : "Online";
+    const messageNote = paymentMethod === "cod"
+      ? "Pay on delivery."
+      : paymentMethod === "upi"
+        ? "Please complete UPI payment to confirm."
+        : "Complete payment to confirm.";
+
     await sendOrderUpdate({
       email: order.email,
       phone: order.phone,
       subject: "Plantity order placed",
-      message: `Your order ${result.insertedId} has been placed and is awaiting payment confirmation.`,
+      message: `Your order ${result.insertedId} has been placed with ${methodLabel}. ${messageNote}`,
     });
 
     return NextResponse.json({ ok: true, orderId: result.insertedId });

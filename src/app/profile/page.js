@@ -3,18 +3,20 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthContext";
 
-const EMPTY_FORM = { name: "", email: "", phone: "", address: "", notes: "" };
+const EMPTY_FORM = { name: "", email: "", phone: "", address: "", city: "", pincode: "", notes: "" };
 
 const MOCK_ORDERS = [
-  { id: "#PL-1042", date: "08 Mar 2026", status: "Delivered", total: "? 1320", items: "Truffle Pizza, Burger" },
-  { id: "#PL-1038", date: "05 Mar 2026", status: "Delivered", total: "? 749", items: "Dragon Sushi Set" },
-  { id: "#PL-1031", date: "01 Mar 2026", status: "Delivered", total: "? 1087", items: "Korean Bowl, Tenders, Lava" },
+  { id: "#PL-1042", date: "08 Mar 2026", status: "Delivered", total: "₹ 1320", items: "Truffle Pizza, Burger" },
+  { id: "#PL-1038", date: "05 Mar 2026", status: "Delivered", total: "₹ 749", items: "Dragon Sushi Set" },
+  { id: "#PL-1031", date: "01 Mar 2026", status: "Delivered", total: "₹ 1087", items: "Korean Bowl, Tenders, Lava" },
 ];
 
 const FIELDS = [
   { name: "name",    label: "Full Name",         type: "text",  placeholder: "Riya Sharma",           col: 1 },
   { name: "email",   label: "Email Address",     type: "email", placeholder: "riya@example.com",       col: 1 },
   { name: "phone",   label: "Phone Number",      type: "tel",   placeholder: "+91 98765 43210",        col: 1 },
+  { name: "city",    label: "City",              type: "text",  placeholder: "Mumbai",                col: 1 },
+  { name: "pincode", label: "Pincode",           type: "text",  placeholder: "400001",                col: 1 },
   { name: "address", label: "Delivery Address",  type: "text",  placeholder: "Flat 4B, MG Road, Mumbai", col: 1 },
 ];
 
@@ -50,7 +52,7 @@ export default function ProfilePage() {
               year: "numeric",
             }),
             status: order.status || "Pending",
-            total: `? ${Math.round(order.totals?.total || 0)}`,
+            total: `₹ ${Math.round(order.totals?.total || 0)}`,
             items: order.items?.map((item) => item.name).join(", ") || "",
           }));
           setOrders(mapped);
