@@ -1,0 +1,12 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="plantityGradient" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f59e0b" />
+      <stop offset="1" stop-color="#f97316" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#plantityGradient)" />
+  <circle cx="32" cy="32" r="18" fill="none" stroke="#0a0705" stroke-width="2.5" opacity="0.85" />
+  <path d="M18 34c3.5 10 24.5 10 28 0" stroke="#0a0705" stroke-width="3" stroke-linecap="round" />
+  <path d="M30 20c-6 4-8 12-3 18 6-2 12-10 10-16-2-4-5-4-7-2z" fill="#0a0705" opacity="0.9" />
+</svg>

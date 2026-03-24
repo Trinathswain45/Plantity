@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/components/CartContext";
@@ -23,8 +24,15 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link href="/" className="group flex items-center gap-3">
-          <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl btn-amber text-base font-black shadow-lg shadow-orange-500/20">
-            <span className="relative z-10">PL</span>
+          <div className="relative h-11 w-11">
+            <Image
+              src="/images/plantity-logo.svg"
+              alt="Plantity logo"
+              width={44}
+              height={44}
+              className="h-11 w-11 rounded-2xl shadow-lg shadow-orange-500/20"
+              priority
+            />
           </div>
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: "rgba(34,197,94,0.2)", border: "1px solid rgba(34,197,94,0.35)" }}>

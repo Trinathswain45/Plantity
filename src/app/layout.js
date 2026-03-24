@@ -12,6 +12,9 @@ const sora = Sora({ subsets: ["latin"], variable: "--font-sora" });
 export const metadata = {
   title: "Plantity | Premium Food Ordering",
   description: "Order chef-crafted dishes delivered hot to your door.",
+  icons: {
+    icon: "/images/plantity-logo.svg",
+  },
 };
 
 export default function RootLayout({ children }) {

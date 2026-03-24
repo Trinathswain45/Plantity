@@ -29,34 +29,93 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState("");
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [upiId, setUpiId] = useState("");
+  const [showProfileForm, setShowProfileForm] = useState(true);
+  const [hasToggledProfile, setHasToggledProfile] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("plantity_profile");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setProfile((prev) => ({
-          ...prev,
-          ...parsed,
-          email: parsed.email || user?.email || prev.email,
-          phone: parsed.phone || user?.phone || prev.phone,
-        }));
+    let cancelled = false;
+
+    const loadProfile = async () => {
+      if (!token) {
+        try {
+          const stored = localStorage.getItem("plantity_profile");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (cancelled) return;
+            setProfile((prev) => ({
+              ...prev,
+              ...parsed,
+              email: parsed.email || user?.email || prev.email,
+              phone: parsed.phone || user?.phone || prev.phone,
+            }));
+          } else if (!cancelled) {
+            setProfile((prev) => ({
+              ...prev,
+              email: user?.email || prev.email,
+              phone: user?.phone || prev.phone,
+            }));
+          }
+        } catch {}
+        if (!cancelled) setProfileLoaded(true);
         return;
       }
-    } catch {}
 
-    setProfile((prev) => ({
-      ...prev,
-      email: user?.email || prev.email,
-      phone: user?.phone || prev.phone,
-    }));
-  }, [user]);
+      try {
+        const res = await fetch("/api/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!cancelled && res.ok) {
+          const loaded = data.profile || {};
+          setProfile((prev) => ({
+            ...prev,
+            ...loaded,
+            email: loaded.email || user?.email || prev.email,
+            phone: loaded.phone || user?.phone || prev.phone,
+          }));
+        } else if (!cancelled) {
+          setProfile((prev) => ({
+            ...prev,
+            email: user?.email || prev.email,
+            phone: user?.phone || prev.phone,
+          }));
+        }
+      } catch {}
+      if (!cancelled) setProfileLoaded(true);
+    };
+
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, user?.email, user?.phone]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("plantity_profile", JSON.stringify(profile));
-    } catch {}
-  }, [profile]);
+    if (!profileLoaded) return;
+
+    if (!token) {
+      try {
+        localStorage.setItem("plantity_profile", JSON.stringify(profile));
+      } catch {}
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        await fetch("/api/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(profile),
+        });
+      } catch {}
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [profile, token, profileLoaded]);
 
   const isProfileComplete = useMemo(() => (
     profile.name &&
@@ -66,6 +125,11 @@ export default function CheckoutPage() {
     profile.city &&
     profile.pincode
   ), [profile]);
+
+  useEffect(() => {
+    if (hasToggledProfile) return;
+    setShowProfileForm(!isProfileComplete);
+  }, [isProfileComplete, hasToggledProfile]);
 
   const handlePay = async () => {
     if (!token) {
@@ -178,154 +242,199 @@ export default function CheckoutPage() {
             <section className="space-y-4 fade-up">
               <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <p className="text-sm font-semibold" style={{ color: "rgba(245,230,211,0.5)" }}>
-                  Fill delivery details before paying
+                  {isProfileComplete ? "Delivery details saved" : "Fill delivery details before paying"}
                 </p>
               </div>
 
-              <div className="rounded-2xl p-5 space-y-4"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
-                      Full Name
-                    </label>
-                    <input
-                      value={profile.name}
-                      onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-                      placeholder="Riya Sharma"
-                      className="input-field"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
-                      Email Address
-                    </label>
-                    <input
-                      value={profile.email}
-                      onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
-                      placeholder="riya@example.com"
-                      className="input-field"
-                      type="email"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
-                      Phone Number
-                    </label>
-                    <input
-                      value={profile.phone}
-                      onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
-                      placeholder="+91 98765 43210"
-                      className="input-field"
-                      type="tel"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
-                      City
-                    </label>
-                    <input
-                      value={profile.city}
-                      onChange={(e) => setProfile((p) => ({ ...p, city: e.target.value }))}
-                      placeholder="Mumbai"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
-                      Delivery Address
-                    </label>
-                    <input
-                      value={profile.address}
-                      onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
-                      placeholder="Flat 4B, MG Road, Mumbai"
-                      className="input-field"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
-                      Pincode
-                    </label>
-                    <input
-                      value={profile.pincode}
-                      onChange={(e) => setProfile((p) => ({ ...p, pincode: e.target.value }))}
-                      placeholder="400001"
-                      className="input-field"
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <p className="text-xs" style={{ color: isProfileComplete ? "#4ade80" : "rgba(245,230,211,0.5)" }}>
-                      {isProfileComplete ? "Details saved for this device" : "Complete all fields to continue"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <p className="text-sm font-semibold" style={{ color: "rgba(245,230,211,0.5)" }}>
-                  Choose a payment method
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setMethod("stripe")}
-                className="flex w-full items-center justify-between rounded-2xl p-5 text-left transition-all card-lift"
-                style={{
-                  background: method === "stripe" ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)",
-                  border: method === "stripe" ? "1px solid rgba(251,191,36,0.45)" : "1px solid rgba(255,255,255,0.07)",
-                }}
-              >
-                <div>
-                  <p className="text-lg font-black" style={{ color: "#f5e6d3" }}>Stripe Card / UPI (Stripe)</p>
-                  <p className="text-xs" style={{ color: "rgba(245,230,211,0.5)" }}>
-                    Instant confirmation. Redirects to Stripe checkout.
-                  </p>
-                </div>
-                <span className="text-xs font-semibold" style={{ color: method === "stripe" ? "#fbbf24" : "rgba(245,230,211,0.45)" }}>
-                  {method === "stripe" ? "Selected" : "Choose"}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMethod("upi")}
-                className="flex w-full items-center justify-between rounded-2xl p-5 text-left transition-all card-lift"
-                style={{
-                  background: method === "upi" ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)",
-                  border: method === "upi" ? "1px solid rgba(251,191,36,0.45)" : "1px solid rgba(255,255,255,0.07)",
-                }}
-              >
-                <div>
-                  <p className="text-lg font-black" style={{ color: "#f5e6d3" }}>UPI App (Pay via UPI)</p>
-                  <p className="text-xs" style={{ color: "rgba(245,230,211,0.5)" }}>
-                    Enter UPI ID and we will open your UPI app.
-                  </p>
-                </div>
-                <span className="text-xs font-semibold" style={{ color: method === "upi" ? "#fbbf24" : "rgba(245,230,211,0.45)" }}>
-                  {method === "upi" ? "Selected" : "Choose"}
-                </span>
-              </button>
-
-              {method === "upi" && (
-                <div className="rounded-2xl p-5 space-y-2"
+              {showProfileForm ? (
+                <div className="rounded-2xl p-5 space-y-4"
                   style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                  <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
-                    UPI ID for Payment
-                  </label>
-                  <input
-                    value={upiId}
-                    onChange={(e) => setUpiId(e.target.value)}
-                    placeholder="yourname@upi"
-                    className="input-field"
-                  />
-                  <p className="text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>
-                    This will open your installed UPI app on mobile devices.
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Full Name
+                      </label>
+                      <input
+                        value={profile.name}
+                        onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                        placeholder="Riya Sharma"
+                        className="input-field"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Email Address
+                      </label>
+                      <input
+                        value={profile.email}
+                        onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
+                        placeholder="riya@example.com"
+                        className="input-field"
+                        type="email"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Phone Number
+                      </label>
+                      <input
+                        value={profile.phone}
+                        onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                        placeholder="+91 98765 43210"
+                        className="input-field"
+                        type="tel"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        City
+                      </label>
+                      <input
+                        value={profile.city}
+                        onChange={(e) => setProfile((p) => ({ ...p, city: e.target.value }))}
+                        placeholder="Mumbai"
+                        className="input-field"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Delivery Address
+                      </label>
+                      <input
+                        value={profile.address}
+                        onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
+                        placeholder="Flat 4B, MG Road, Mumbai"
+                        className="input-field"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Pincode
+                      </label>
+                      <input
+                        value={profile.pincode}
+                        onChange={(e) => setProfile((p) => ({ ...p, pincode: e.target.value }))}
+                        placeholder="400001"
+                        className="input-field"
+                      />
+                    </div>
+                    <div className="flex items-end justify-between gap-3">
+                      <p className="text-xs" style={{ color: isProfileComplete ? "#4ade80" : "rgba(245,230,211,0.5)" }}>
+                        {isProfileComplete ? "Details saved for this device" : "Complete all fields to continue"}
+                      </p>
+                      {isProfileComplete && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHasToggledProfile(true);
+                            setShowProfileForm(false);
+                          }}
+                          className="rounded-full px-4 py-1.5 text-xs font-bold transition"
+                          style={{ background: "rgba(251,191,36,0.12)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.35)" }}
+                        >
+                          Continue to Payment
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl p-5 space-y-3"
+                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold" style={{ color: "#f5e6d3" }}>
+                      {profile.name}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHasToggledProfile(true);
+                        setShowProfileForm(true);
+                      }}
+                      className="rounded-full px-4 py-1.5 text-xs font-bold transition"
+                      style={{ background: "rgba(251,191,36,0.12)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.35)" }}
+                    >
+                      Edit Details
+                    </button>
+                  </div>
+                  <p className="text-xs" style={{ color: "rgba(245,230,211,0.6)" }}>{profile.email} • {profile.phone}</p>
+                  <p className="text-xs" style={{ color: "rgba(245,230,211,0.6)" }}>
+                    {profile.address}, {profile.city} - {profile.pincode}
                   </p>
                 </div>
+              )}
+
+              {isProfileComplete && !showProfileForm && (
+                <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <p className="text-sm font-semibold" style={{ color: "rgba(245,230,211,0.5)" }}>
+                    Choose a payment method
+                  </p>
+                </div>
+              )}
+
+              {isProfileComplete && !showProfileForm && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setMethod("stripe")}
+                    className="flex w-full items-center justify-between rounded-2xl p-5 text-left transition-all card-lift"
+                    style={{
+                      background: method === "stripe" ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)",
+                      border: method === "stripe" ? "1px solid rgba(251,191,36,0.45)" : "1px solid rgba(255,255,255,0.07)",
+                    }}
+                  >
+                    <div>
+                      <p className="text-lg font-black" style={{ color: "#f5e6d3" }}>Stripe Card / UPI (Stripe)</p>
+                      <p className="text-xs" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Instant confirmation. Redirects to Stripe checkout.
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold" style={{ color: method === "stripe" ? "#fbbf24" : "rgba(245,230,211,0.45)" }}>
+                      {method === "stripe" ? "Selected" : "Choose"}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMethod("upi")}
+                    className="flex w-full items-center justify-between rounded-2xl p-5 text-left transition-all card-lift"
+                    style={{
+                      background: method === "upi" ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)",
+                      border: method === "upi" ? "1px solid rgba(251,191,36,0.45)" : "1px solid rgba(255,255,255,0.07)",
+                    }}
+                  >
+                    <div>
+                      <p className="text-lg font-black" style={{ color: "#f5e6d3" }}>UPI App (Pay via UPI)</p>
+                      <p className="text-xs" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Enter UPI ID and we will open your UPI app.
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold" style={{ color: method === "upi" ? "#fbbf24" : "rgba(245,230,211,0.45)" }}>
+                      {method === "upi" ? "Selected" : "Choose"}
+                    </span>
+                  </button>
+
+                  {method === "upi" && (
+                    <div className="rounded-2xl p-5 space-y-2"
+                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                      <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        UPI ID for Payment
+                      </label>
+                      <input
+                        value={upiId}
+                        onChange={(e) => setUpiId(e.target.value)}
+                        placeholder="yourname@upi"
+                        className="input-field"
+                      />
+                      <p className="text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>
+                        This will open your installed UPI app on mobile devices.
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
 
               {success && (

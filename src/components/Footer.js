@@ -5,9 +5,9 @@ export default function Footer() {
         <div className="grid gap-8 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>
             <p className="text-sm" style={{ color: "rgba(245,230,211,0.6)" }}>
-              Lorem ipsum dolor sit, amet consectetur adipisicing elit. Cumque nostrum iure suscipit maiores non harum
-              incidunt unde magnam molestias ipsum qui vel aut natus aspernatur ipsa dignissimos, numquam assumenda
-              deserunt.
+              Plantity brings chef-crafted comfort food and seasonal specials together in one place. We focus on
+              fresh ingredients, mindful packaging, and fast delivery so every order arrives warm, balanced, and ready
+              to enjoy.
             </p>
           </div>
 
@@ -35,13 +35,13 @@ export default function Footer() {
             </p>
             <div className="mt-4 space-y-2 text-sm" style={{ color: "rgba(245,230,211,0.6)" }}>
               <p>+92-308-4900522</p>
-              <p>contact@tomato.com</p>
+              <p>contact@plantity.com</p>
             </div>
           </div>
         </div>
 
         <div className="mt-10 text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>
-          Copyright 2024 @ Tomato.com - All Right Reserved.
+          Copyright 2026 @ Plantity.com - All Rights Reserved.
         </div>
       </div>
     </footer>

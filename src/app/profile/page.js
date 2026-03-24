@@ -23,16 +23,47 @@ const FIELDS = [
 export default function ProfilePage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [orders, setOrders] = useState(MOCK_ORDERS);
   const [loadingOrders, setLoadingOrders] = useState(false);
-  const { token, openAuth } = useAuth();
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const { token, openAuth, user } = useAuth();
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("plantity_profile");
-      if (raw) setForm(JSON.parse(raw));
-    } catch {}
-  }, []);
+    if (!token) return;
+    let cancelled = false;
+
+    const loadProfile = async () => {
+      setLoadingProfile(true);
+      try {
+        const res = await fetch("/api/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!cancelled && res.ok) {
+          const loaded = data.profile || {};
+          setForm((prev) => ({
+            ...prev,
+            ...loaded,
+            email: loaded.email || user?.email || prev.email,
+            phone: loaded.phone || user?.phone || prev.phone,
+          }));
+        } else if (!cancelled) {
+          setForm((prev) => ({
+            ...prev,
+            email: user?.email || prev.email,
+            phone: user?.phone || prev.phone,
+          }));
+        }
+      } catch {}
+      if (!cancelled) setLoadingProfile(false);
+    };
+
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, user?.email, user?.phone]);
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -72,11 +103,34 @@ export default function ProfilePage() {
     setSaved(false);
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    localStorage.setItem("plantity_profile", JSON.stringify(form));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+
+    if (!token) {
+      openAuth();
+      return;
+    }
+
+    setSaving(true);
+    setSaved(false);
+
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch {} finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -89,6 +143,11 @@ export default function ProfilePage() {
             Account
           </p>
           <h1 className="text-4xl font-black" style={{ color: "#f5e6d3" }}>My Profile</h1>
+          {loadingProfile && (
+            <p className="mt-2 text-xs" style={{ color: "rgba(245,230,211,0.5)" }}>
+              Loading saved details...
+            </p>
+          )}
         </div>
 
         {/* Profile card */}
@@ -148,8 +207,9 @@ export default function ProfilePage() {
 
             <div className="flex items-center gap-4 pt-2">
               <button type="submit"
+                disabled={saving}
                 className="btn-amber px-8 py-3 text-sm font-black shadow-lg shadow-orange-500/25">
-                Save Profile
+                {saving ? "Saving..." : "Save Profile"}
               </button>
               {saved && (
                 <span className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: "#4ade80" }}>
