@@ -29,9 +29,6 @@ export async function sendOtp({ email, phone, code }) {
   if (email && hasEmailConfig()) {
     const transporter = getTransporter();
     try {
-      if (process.env.NODE_ENV !== "production") {
-        await transporter.verify();
-      }
       await transporter.sendMail({
         from: process.env.SMTP_FROM || "no-reply@plantity.com",
         to: email,
@@ -67,9 +64,6 @@ export async function sendOrderUpdate({ email, phone, subject, message }) {
   if (email && hasEmailConfig()) {
     const transporter = getTransporter();
     try {
-      if (process.env.NODE_ENV !== "production") {
-        await transporter.verify();
-      }
       await transporter.sendMail({
         from: process.env.SMTP_FROM || "no-reply@plantity.com",
         to: email,

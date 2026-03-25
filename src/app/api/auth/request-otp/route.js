@@ -27,10 +27,11 @@ export async function POST(req) {
       used: false,
     });
 
-    const channelResult = await sendOtp({ email, phone, code });
-    const channel =
-      typeof channelResult === "string" ? channelResult : channelResult?.channel || "unknown";
+    sendOtp({ email, phone, code }).catch((error) => {
+      console.error("OTP send failed", error);
+    });
 
+    const channel = email ? "email" : phone ? "sms" : "log";
     return NextResponse.json({ ok: true, channel });
   } catch (error) {
     console.error(error);

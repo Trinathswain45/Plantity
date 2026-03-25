@@ -5,12 +5,6 @@ import { useAuth } from "@/components/AuthContext";
 
 const EMPTY_FORM = { name: "", email: "", phone: "", address: "", city: "", pincode: "", notes: "" };
 
-const MOCK_ORDERS = [
-  { id: "#PL-1042", date: "08 Mar 2026", status: "Delivered", total: "₹ 1320", items: "Truffle Pizza, Burger" },
-  { id: "#PL-1038", date: "05 Mar 2026", status: "Delivered", total: "₹ 749", items: "Dragon Sushi Set" },
-  { id: "#PL-1031", date: "01 Mar 2026", status: "Delivered", total: "₹ 1087", items: "Korean Bowl, Tenders, Lava" },
-];
-
 const FIELDS = [
   { name: "name",    label: "Full Name",         type: "text",  placeholder: "Riya Sharma",           col: 1 },
   { name: "email",   label: "Email Address",     type: "email", placeholder: "riya@example.com",       col: 1 },
@@ -24,7 +18,7 @@ export default function ProfilePage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [orders, setOrders] = useState(MOCK_ORDERS);
+  const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const { token, openAuth, user } = useAuth();
@@ -75,17 +69,27 @@ export default function ProfilePage() {
         });
         const data = await res.json();
         if (res.ok && Array.isArray(data.orders)) {
-          const mapped = data.orders.map((order) => ({
-            id: `#${order._id}`,
-            date: new Date(order.createdAt).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }),
-            status: order.status || "Pending",
-            total: `₹ ${Math.round(order.totals?.total || 0)}`,
-            items: order.items?.map((item) => item.name).join(", ") || "",
-          }));
+          const mapped = data.orders.map((order) => {
+            const statusRaw = order.status || "pending";
+            const statusLabel = statusRaw === "paid"
+              ? "Paid"
+              : statusRaw === "cod_pending"
+                ? "Cash On Delivery"
+                : statusRaw.replace(/_/g, " ");
+            const statusTone = statusRaw === "paid" ? "paid" : statusRaw === "cod_pending" ? "cod" : "pending";
+            return {
+              id: `#${order._id}`,
+              date: new Date(order.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              }),
+              status: statusLabel,
+              statusTone,
+              total: `Rs ${Math.round(order.totals?.total || 0)}`,
+              items: order.items?.map((item) => item.name).join(", ") || "",
+            };
+          });
           setOrders(mapped);
         }
       } catch {
@@ -265,8 +269,12 @@ export default function ProfilePage() {
                     <span style={{ color: "rgba(245,230,211,0.5)" }}>{order.date}</span>
                     <span className="font-black gradient-text">{order.total}</span>
                     <span className="rounded-full px-3 py-1 text-xs font-bold"
-                      style={{ background: "rgba(74,222,128,0.1)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }}>
-                      OK {order.status}
+                      style={order.statusTone === "paid"
+                        ? { background: "rgba(74,222,128,0.1)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }
+                        : order.statusTone === "cod"
+                          ? { background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }
+                          : { background: "rgba(148,163,184,0.1)", color: "#94a3b8", border: "1px solid rgba(148,163,184,0.2)" }}>
+                      {order.status}
                     </span>
                     <button className="text-xs font-semibold underline-offset-2 hover:underline"
                       style={{ color: "rgba(251,191,36,0.7)" }}>
@@ -300,3 +308,4 @@ export default function ProfilePage() {
     </main>
   );
 }
+

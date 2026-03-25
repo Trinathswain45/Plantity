@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getDb } from "@/lib/mongodb";
 import { requireAuth } from "@/lib/auth";
-import { sendOrderUpdate } from "@/lib/notify";
 import { ObjectId } from "mongodb";
 
 export const runtime = "nodejs";
@@ -12,6 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const PROFILE_FIELDS = ["name", "email", "phone", "address", "city", "pincode", "notes"];
 
 export async function POST(req) {
   const { user, response } = requireAuth(req);
@@ -48,12 +48,19 @@ export async function POST(req) {
       });
       orderId = insert.insertedId.toString();
 
-      await sendOrderUpdate({
-        email: user.email,
-        phone: user.phone,
-        subject: "Plantity order created",
-        message: `Your order ${orderId} is created. Complete payment to confirm it.`,
+      const profileUpdates = {};
+      PROFILE_FIELDS.forEach((field) => {
+        if (typeof delivery?.[field] === "string" && delivery[field].trim()) {
+          profileUpdates[field] = delivery[field].trim();
+        }
       });
+      if (Object.keys(profileUpdates).length > 0) {
+        profileUpdates.updatedAt = new Date();
+        await db.collection("users").updateOne(
+          { _id: new ObjectId(user.sub) },
+          { $set: profileUpdates }
+        );
+      }
     }
 
     const lineItems = items.map((item) => ({

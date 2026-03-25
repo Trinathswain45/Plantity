@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/components/CartContext";
 import { useAuth } from "@/components/AuthContext";
@@ -9,8 +10,42 @@ import { useAuth } from "@/components/AuthContext";
 export default function Navbar() {
   const pathname = usePathname();
   const { summary: { itemCount } } = useCart();
-  const { user, openAuth, signOut } = useAuth();
-  const profileInitial = (user?.email || user?.phone || "U").trim().charAt(0).toUpperCase();
+  const { user, token, openAuth, signOut } = useAuth();
+  const [profileName, setProfileName] = useState("");
+
+  useEffect(() => {
+    if (!token) {
+      setProfileName("");
+      return;
+    }
+
+    let cancelled = false;
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!cancelled && res.ok) {
+          setProfileName(data?.profile?.name || "");
+        }
+      } catch {}
+    };
+
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const displayName = useMemo(() => {
+    if (profileName?.trim()) return profileName.trim();
+    if (user?.email) return user.email.split("@")[0];
+    if (user?.phone) return user.phone;
+    return "User";
+  }, [profileName, user?.email, user?.phone]);
+
+  const profileInitial = displayName.trim().charAt(0).toUpperCase();
 
   const links = [
     { href: "/", label: "Menu" },
@@ -34,20 +69,13 @@ export default function Navbar() {
               priority
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: "rgba(34,197,94,0.2)", border: "1px solid rgba(34,197,94,0.35)" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 15c6-1 9-5 12-11 1 7-2 14-9 16-3 1-6-1-6-5 0-3 1-5 3-7" stroke="#4ade80" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-            <div>
-              <p className="text-[1.1rem] font-black tracking-wide" style={{ color: "#f5e6d3" }}>
-                Plantity
-              </p>
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.15em]" style={{ color: "rgba(251,191,36,0.7)" }}>
-                Premium Delivery
-              </p>
-            </div>
+          <div>
+            <p className="text-[1.1rem] font-black tracking-wide" style={{ color: "#f5e6d3" }}>
+              Plantity
+            </p>
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.15em]" style={{ color: "rgba(251,191,36,0.7)" }}>
+              Premium Delivery
+            </p>
           </div>
         </Link>
 
@@ -91,7 +119,7 @@ export default function Navbar() {
                 {profileInitial}
               </div>
               <div className="flex flex-col">
-                <span style={{ color: "#f5e6d3" }}>{user.email || user.phone}</span>
+                <span style={{ color: "#f5e6d3" }}>{displayName}</span>
                 <button onClick={signOut} className="text-[10px] font-bold uppercase"
                   style={{ color: "rgba(245,230,211,0.7)" }}>
                   Sign out

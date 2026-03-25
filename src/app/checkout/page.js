@@ -7,7 +7,7 @@ import { useCart } from "@/components/CartContext";
 import { useAuth } from "@/components/AuthContext";
 
 function money(v) {
-  return `₹ ${Math.round(v)}`;
+  return `Rs ${Math.round(v)}`;
 }
 
 const EMPTY_PROFILE = {
@@ -19,6 +19,8 @@ const EMPTY_PROFILE = {
   pincode: "",
 };
 
+const MERCHANT_UPI_ID = "trinathswain.557@okicici";
+
 export default function CheckoutPage() {
   const { cart, summary, clearCart } = useCart();
   const { token, openAuth, user } = useAuth();
@@ -29,9 +31,17 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState("");
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [upiId, setUpiId] = useState("");
+  const [upiTxnId, setUpiTxnId] = useState("");
+  const [upiStep, setUpiStep] = useState("idle");
   const [showProfileForm, setShowProfileForm] = useState(true);
   const [hasToggledProfile, setHasToggledProfile] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+
+  useEffect(() => {
+    if (method !== "upi") {
+      setUpiStep("idle");
+    }
+  }, [method]);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,26 +141,32 @@ export default function CheckoutPage() {
     setShowProfileForm(!isProfileComplete);
   }, [isProfileComplete, hasToggledProfile]);
 
-  const handlePay = async () => {
+  const ensureReady = () => {
     if (!token) {
       openAuth();
-      return;
+      return false;
     }
 
     if (!cart.length) {
       router.push("/cart");
-      return;
+      return false;
     }
 
     if (!isProfileComplete) {
       setError("Please fill your delivery details before paying.");
-      return;
+      return false;
     }
 
     if (method === "upi" && !upiId.trim()) {
-      setError("Please enter a UPI ID to proceed.");
-      return;
+      setError("Please enter your UPI ID to proceed.");
+      return false;
     }
+
+    return true;
+  };
+
+  const handlePay = async () => {
+    if (!ensureReady()) return;
 
     setLoading(true);
     setError("");
@@ -179,6 +195,26 @@ export default function CheckoutPage() {
         throw new Error("Stripe checkout URL missing");
       }
 
+      const amount = Number(summary.total || 0).toFixed(2);
+      const note = encodeURIComponent("Plantity Order Payment");
+      const upiLink = `upi://pay?pa=${encodeURIComponent(MERCHANT_UPI_ID)}&pn=Plantity&am=${amount}&cu=INR&tn=${note}`;
+      setSuccess("UPI app opened. Complete payment, then confirm below.");
+      setUpiStep("initiated");
+      window.location.href = upiLink;
+    } catch (err) {
+      setError(err.message || "Payment failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmUpiPayment = async () => {
+    if (!ensureReady()) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: {
@@ -190,20 +226,22 @@ export default function CheckoutPage() {
           totals: summary,
           delivery: profile,
           paymentMethod: "upi",
-          paymentMeta: { upiId: upiId.trim() },
+          paymentConfirmed: true,
+          paymentMeta: {
+            payerUpiId: upiId.trim(),
+            transactionId: upiTxnId.trim(),
+            payeeUpiId: MERCHANT_UPI_ID,
+          },
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Order failed");
 
       clearCart();
-      const amount = Number(summary.total || 0).toFixed(2);
-      const note = encodeURIComponent(`Plantity Order ${data.orderId}`);
-      const upiLink = `upi://pay?pa=${encodeURIComponent(upiId.trim())}&pn=Plantity&am=${amount}&cu=INR&tn=${note}`;
-      setSuccess("Opening your UPI app...");
-      window.location.href = upiLink;
+      setSuccess("Payment confirmed. Your order is placed.");
+      setUpiStep("confirmed");
     } catch (err) {
-      setError(err.message || "Payment failed");
+      setError(err.message || "Unable to confirm payment");
     } finally {
       setLoading(false);
     }
@@ -360,7 +398,7 @@ export default function CheckoutPage() {
                       Edit Details
                     </button>
                   </div>
-                  <p className="text-xs" style={{ color: "rgba(245,230,211,0.6)" }}>{profile.email} • {profile.phone}</p>
+                  <p className="text-xs" style={{ color: "rgba(245,230,211,0.6)" }}>{profile.email} / {profile.phone}</p>
                   <p className="text-xs" style={{ color: "rgba(245,230,211,0.6)" }}>
                     {profile.address}, {profile.city} - {profile.pincode}
                   </p>
@@ -409,7 +447,7 @@ export default function CheckoutPage() {
                     <div>
                       <p className="text-lg font-black" style={{ color: "#f5e6d3" }}>UPI App (Pay via UPI)</p>
                       <p className="text-xs" style={{ color: "rgba(245,230,211,0.5)" }}>
-                        Enter UPI ID and we will open your UPI app.
+                        Pay to Plantity UPI and confirm after payment.
                       </p>
                     </div>
                     <span className="text-xs font-semibold" style={{ color: method === "upi" ? "#fbbf24" : "rgba(245,230,211,0.45)" }}>
@@ -421,7 +459,7 @@ export default function CheckoutPage() {
                     <div className="rounded-2xl p-5 space-y-2"
                       style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
                       <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
-                        UPI ID for Payment
+                        Your UPI ID
                       </label>
                       <input
                         value={upiId}
@@ -429,9 +467,29 @@ export default function CheckoutPage() {
                         placeholder="yourname@upi"
                         className="input-field"
                       />
+                      <label className="block text-xs font-bold uppercase tracking-wider pt-2" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Transaction ID (optional)
+                      </label>
+                      <input
+                        value={upiTxnId}
+                        onChange={(e) => setUpiTxnId(e.target.value)}
+                        placeholder="UTR / Txn ID"
+                        className="input-field"
+                      />
                       <p className="text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>
-                        This will open your installed UPI app on mobile devices.
+                        We will open your UPI app to pay {MERCHANT_UPI_ID}.
                       </p>
+
+                      {upiStep === "initiated" && (
+                        <button
+                          type="button"
+                          onClick={confirmUpiPayment}
+                          disabled={loading}
+                          className="btn-amber mt-2 w-full py-3 text-xs font-black"
+                        >
+                          {loading ? "Confirming..." : "I Have Completed Payment"}
+                        </button>
+                      )}
                     </div>
                   )}
                 </>
@@ -500,3 +558,7 @@ export default function CheckoutPage() {
     </main>
   );
 }
+
+
+
+

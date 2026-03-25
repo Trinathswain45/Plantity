@@ -76,15 +76,12 @@ export default function Home() {
             </div>
 
             {/* Search */}
-            <div className="relative w-full sm:w-72">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base" style={{ color: "rgba(245,230,211,0.35)" }}>
-                Search
-              </span>
+            <div className="w-full sm:w-72">
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search dishes, ingredients..."
-                className="input-field pl-9"
+                className="input-field"
               />
             </div>
           </div>
