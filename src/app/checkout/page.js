@@ -31,7 +31,6 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState("");
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [upiId, setUpiId] = useState("");
-  const [upiTxnId, setUpiTxnId] = useState("");
   const [upiStep, setUpiStep] = useState("idle");
   const [showProfileForm, setShowProfileForm] = useState(true);
   const [hasToggledProfile, setHasToggledProfile] = useState(false);
@@ -229,7 +228,6 @@ export default function CheckoutPage() {
           paymentConfirmed: true,
           paymentMeta: {
             payerUpiId: upiId.trim(),
-            transactionId: upiTxnId.trim(),
             payeeUpiId: MERCHANT_UPI_ID,
           },
         }),
@@ -467,18 +465,6 @@ export default function CheckoutPage() {
                         placeholder="yourname@upi"
                         className="input-field"
                       />
-                      <label className="block text-xs font-bold uppercase tracking-wider pt-2" style={{ color: "rgba(245,230,211,0.5)" }}>
-                        Transaction ID (optional)
-                      </label>
-                      <input
-                        value={upiTxnId}
-                        onChange={(e) => setUpiTxnId(e.target.value)}
-                        placeholder="UTR / Txn ID"
-                        className="input-field"
-                      />
-                      <p className="text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>
-                        We will open your UPI app to pay {MERCHANT_UPI_ID}.
-                      </p>
 
                       {upiStep === "initiated" && (
                         <button
@@ -558,6 +544,7 @@ export default function CheckoutPage() {
     </main>
   );
 }
+
 
 
 
