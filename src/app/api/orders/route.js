@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { requireAuth } from "@/lib/auth";
@@ -7,6 +7,19 @@ import { sendOrderUpdate } from "@/lib/notify";
 export const runtime = "nodejs";
 
 const PROFILE_FIELDS = ["name", "email", "phone", "address", "city", "pincode", "notes"];
+const ORDER_STATUSES = ["placed", "confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"];
+const PENDING_STATUSES = ["pending", "payment_pending", "upi_pending", "cod_pending"];
+
+function initTimeline(status, note, user) {
+  return [
+    {
+      status,
+      at: new Date(),
+      note,
+      by: user?.email || user?.phone || "system",
+    },
+  ];
+}
 
 export async function POST(req) {
   const { user, response } = requireAuth(req);
@@ -29,10 +42,12 @@ export async function POST(req) {
     const statusByMethod = {
       cod: "cod_pending",
       upi: "upi_pending",
-      razorpay: "payment_pending",
+      razorpay: "pending",
+      stripe: "pending",
     };
 
-    const status = paymentConfirmed ? "paid" : (statusByMethod[paymentMethod] || "pending");
+    const paymentStatus = paymentConfirmed ? "paid" : (statusByMethod[paymentMethod] || "pending");
+    const orderStatus = "placed";
 
     const order = {
       userId: user.sub,
@@ -43,7 +58,10 @@ export async function POST(req) {
       delivery,
       paymentMethod,
       paymentMeta,
-      status,
+      paymentStatus,
+      orderStatus,
+      status: paymentStatus,
+      timeline: initTimeline(orderStatus, "Order placed", user),
       createdAt: new Date(),
       paidAt: paymentConfirmed ? new Date() : null,
     };
@@ -78,7 +96,7 @@ export async function POST(req) {
       });
     }
 
-    return NextResponse.json({ ok: true, orderId: result.insertedId });
+    return NextResponse.json({ ok: true, orderId: result.insertedId, orderStatus, paymentStatus });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
@@ -95,7 +113,10 @@ export async function GET(req) {
 
     const query = { userId: user.sub };
     if (!includePending) {
-      query.status = { $nin: ["payment_pending", "upi_pending"] };
+      query.$and = [
+        { $or: [{ paymentStatus: { $exists: false } }, { paymentStatus: { $nin: PENDING_STATUSES } }] },
+        { $or: [{ status: { $exists: false } }, { status: { $nin: PENDING_STATUSES } }] },
+      ];
     }
 
     const db = await getDb();
@@ -106,7 +127,7 @@ export async function GET(req) {
       .limit(20)
       .toArray();
 
-    return NextResponse.json({ ok: true, orders });
+    return NextResponse.json({ ok: true, orders, orderStatuses: ORDER_STATUSES });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Failed to load orders" }, { status: 500 });

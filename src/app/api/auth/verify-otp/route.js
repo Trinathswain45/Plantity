@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { hashOtp } from "@/lib/otp";
 import { signJwt } from "@/lib/auth";
@@ -39,10 +39,11 @@ export async function POST(req) {
       const insert = await db.collection("users").insertOne({
         email,
         phone,
+        role: "user",
         createdAt: new Date(),
         lastLoginAt: new Date(),
       });
-      user = { _id: insert.insertedId, email, phone };
+      user = { _id: insert.insertedId, email, phone, role: "user" };
     } else {
       await db.collection("users").updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
     }
@@ -51,12 +52,13 @@ export async function POST(req) {
       sub: user._id.toString(),
       email: user.email || null,
       phone: user.phone || null,
+      role: user.role || "user",
     });
 
     return NextResponse.json({
       ok: true,
       token,
-      user: { id: user._id.toString(), email: user.email || null, phone: user.phone || null },
+      user: { id: user._id.toString(), email: user.email || null, phone: user.phone || null, role: user.role || "user" },
     });
   } catch (error) {
     console.error(error);

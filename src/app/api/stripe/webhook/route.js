@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getDb } from "@/lib/mongodb";
 import { sendOrderUpdate } from "@/lib/notify";
@@ -39,7 +39,22 @@ export async function POST(req) {
         const order = await db.collection("orders").findOne({ _id: new ObjectId(orderId) });
         await db.collection("orders").updateOne(
           { _id: new ObjectId(orderId) },
-          { $set: { status: "paid", paidAt: new Date() } }
+          {
+            $set: {
+              paymentStatus: "paid",
+              status: "paid",
+              paidAt: new Date(),
+              orderStatus: order?.orderStatus === "placed" ? "confirmed" : (order?.orderStatus || "confirmed"),
+            },
+            $push: {
+              timeline: {
+                status: order?.orderStatus === "placed" ? "confirmed" : (order?.orderStatus || "confirmed"),
+                at: new Date(),
+                note: "Payment confirmed",
+                by: "system",
+              },
+            },
+          }
         );
 
         await sendOrderUpdate({

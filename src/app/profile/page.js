@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthContext";
@@ -14,6 +14,24 @@ const FIELDS = [
   { name: "address", label: "Delivery Address",  type: "text",  placeholder: "Flat 4B, MG Road, Mumbai", col: 1 },
 ];
 
+const ORDER_STATUS_LABELS = {
+  placed: "Placed",
+  confirmed: "Confirmed",
+  preparing: "Preparing",
+  out_for_delivery: "Out for Delivery",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+
+const ORDER_STATUS_TONES = {
+  placed: "pending",
+  confirmed: "info",
+  preparing: "info",
+  out_for_delivery: "info",
+  delivered: "success",
+  cancelled: "cancelled",
+};
+
 export default function ProfilePage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saved, setSaved] = useState(false);
@@ -21,6 +39,7 @@ export default function ProfilePage() {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [invoiceLoadingId, setInvoiceLoadingId] = useState(null);
   const { token, openAuth, user } = useAuth();
 
   useEffect(() => {
@@ -70,14 +89,12 @@ export default function ProfilePage() {
         const data = await res.json();
         if (res.ok && Array.isArray(data.orders)) {
           const mapped = data.orders.map((order) => {
-            const statusRaw = order.status || "pending";
-            const statusLabel = statusRaw === "paid"
-              ? "Paid"
-              : statusRaw === "cod_pending"
-                ? "Cash On Delivery"
-                : statusRaw.replace(/_/g, " ");
-            const statusTone = statusRaw === "paid" ? "paid" : statusRaw === "cod_pending" ? "cod" : "pending";
+            const orderStatus = order.orderStatus || (order.status === "paid" ? "confirmed" : "placed");
+            const statusLabel = ORDER_STATUS_LABELS[orderStatus] || orderStatus.replace(/_/g, " ");
+            const statusTone = ORDER_STATUS_TONES[orderStatus] || "pending";
+            const paymentStatus = order.paymentStatus || order.status || "pending";
             return {
+              idRaw: order._id,
               id: `#${order._id}`,
               date: new Date(order.createdAt).toLocaleDateString("en-GB", {
                 day: "2-digit",
@@ -86,8 +103,11 @@ export default function ProfilePage() {
               }),
               status: statusLabel,
               statusTone,
+              orderStatus,
+              paymentStatus,
               total: `Rs ${Math.round(order.totals?.total || 0)}`,
               items: order.items?.map((item) => item.name).join(", ") || "",
+              timeline: Array.isArray(order.timeline) ? order.timeline : [],
             };
           });
           setOrders(mapped);
@@ -134,6 +154,33 @@ export default function ProfilePage() {
       }
     } catch {} finally {
       setSaving(false);
+    }
+  };
+
+  const handleInvoice = async (orderId) => {
+    if (!token) {
+      openAuth();
+      return;
+    }
+
+    setInvoiceLoadingId(orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/invoice`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to download");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `plantity-invoice-${orderId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+    } finally {
+      setInvoiceLoadingId(null);
     }
   };
 
@@ -248,37 +295,76 @@ export default function ProfilePage() {
             <div className="space-y-3">
               {orders.map((order, i) => (
                 <div key={order.id}
-                  className="flex flex-col gap-3 rounded-2xl p-5 card-lift sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-4 rounded-2xl p-5 card-lift"
                   style={{
                     background: "rgba(255,255,255,0.03)",
                     border: "1px solid rgba(255,255,255,0.07)",
                     animationDelay: `${i * 80}ms`,
                   }}>
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl text-xs font-black"
-                      style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.15)" }}>
-                      MEAL
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl text-xs font-black"
+                        style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.15)" }}>
+                        MEAL
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm" style={{ color: "#f5e6d3" }}>{order.id}</p>
+                        <p className="text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>{order.items}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-sm" style={{ color: "#f5e6d3" }}>{order.id}</p>
-                      <p className="text-xs" style={{ color: "rgba(245,230,211,0.45)" }}>{order.items}</p>
+
+                    <div className="flex flex-wrap items-center gap-3 text-sm">
+                      <span style={{ color: "rgba(245,230,211,0.5)" }}>{order.date}</span>
+                      <span className="font-black gradient-text">{order.total}</span>
+                      <span className="rounded-full px-3 py-1 text-xs font-bold"
+                        style={order.statusTone === "success"
+                          ? { background: "rgba(74,222,128,0.1)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }
+                          : order.statusTone === "cancelled"
+                            ? { background: "rgba(239,68,68,0.12)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.25)" }
+                            : { background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
+                        {order.status}
+                      </span>
+                      <span className="text-xs font-semibold" style={{ color: "rgba(245,230,211,0.45)" }}>
+                        Payment: {order.paymentStatus}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <span style={{ color: "rgba(245,230,211,0.5)" }}>{order.date}</span>
-                    <span className="font-black gradient-text">{order.total}</span>
-                    <span className="rounded-full px-3 py-1 text-xs font-bold"
-                      style={order.statusTone === "paid"
-                        ? { background: "rgba(74,222,128,0.1)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }
-                        : order.statusTone === "cod"
-                          ? { background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }
-                          : { background: "rgba(148,163,184,0.1)", color: "#94a3b8", border: "1px solid rgba(148,163,184,0.2)" }}>
-                      {order.status}
-                    </span>
+                  {order.timeline.length > 0 && (
+                    <div className="rounded-xl p-4 text-xs" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wider" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Order Timeline
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {order.timeline.slice(0, 4).map((step, idx) => (
+                          <div key={`${order.id}-step-${idx}`} className="rounded-lg px-3 py-2"
+                            style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.15)" }}>
+                            <p className="text-xs font-bold" style={{ color: "#f5e6d3" }}>
+                              {(ORDER_STATUS_LABELS[step.status] || step.status || "Update").toString()}
+                            </p>
+                            <p className="text-[11px]" style={{ color: "rgba(245,230,211,0.5)" }}>
+                              {new Date(step.at).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                            {step.note && (
+                              <p className="text-[11px]" style={{ color: "rgba(245,230,211,0.6)" }}>{step.note}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <button className="text-xs font-semibold underline-offset-2 hover:underline"
                       style={{ color: "rgba(251,191,36,0.7)" }}>
                       Reorder
+                    </button>
+                    <button
+                      onClick={() => handleInvoice(order.idRaw)}
+                      className="rounded-full px-4 py-1.5 text-xs font-bold"
+                      style={{ background: "rgba(251,191,36,0.12)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.35)" }}
+                    >
+                      {invoiceLoadingId === order.idRaw ? "Preparing PDF..." : "Download Invoice"}
                     </button>
                   </div>
                 </div>
@@ -308,4 +394,3 @@ export default function ProfilePage() {
     </main>
   );
 }
-

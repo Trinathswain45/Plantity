@@ -20,12 +20,36 @@ const EMPTY_PROFILE = {
 };
 
 const MERCHANT_UPI_ID = "trinathswain.557@okicici";
+const RAZORPAY_SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
+
+function loadRazorpayScript() {
+  return new Promise((resolve, reject) => {
+    if (typeof window !== "undefined" && window.Razorpay) {
+      resolve(true);
+      return;
+    }
+
+    const existing = document.querySelector(`script[src="${RAZORPAY_SCRIPT}"]`);
+    if (existing) {
+      existing.addEventListener("load", () => resolve(true));
+      existing.addEventListener("error", () => reject(new Error("Razorpay SDK failed to load")));
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = RAZORPAY_SCRIPT;
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error("Razorpay SDK failed to load"));
+    document.body.appendChild(script);
+  });
+}
 
 export default function CheckoutPage() {
   const { cart, summary, clearCart } = useCart();
   const { token, openAuth, user } = useAuth();
   const router = useRouter();
-  const [method, setMethod] = useState("stripe");
+  const [method, setMethod] = useState("razorpay");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -172,8 +196,31 @@ export default function CheckoutPage() {
     setSuccess("");
 
     try {
-      if (method === "stripe") {
-        const res = await fetch("/api/stripe/create-checkout", {
+      if (method === "cod") {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            items: cart,
+            totals: summary,
+            delivery: profile,
+            paymentMethod: "cod",
+            paymentConfirmed: false,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Order failed");
+
+        clearCart();
+        setSuccess("Order placed. Pay on delivery.");
+        return;
+      }
+
+      if (method === "razorpay") {
+        const res = await fetch("/api/razorpay/create-order", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -187,12 +234,71 @@ export default function CheckoutPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Checkout failed");
-        if (data.url) {
-          window.location.href = data.url;
-          return;
-        }
-        throw new Error("Stripe checkout URL missing");
+
+        await loadRazorpayScript();
+
+        const options = {
+          key: data.keyId,
+          amount: data.amount,
+          currency: data.currency || "INR",
+          name: "Plantity",
+          description: "Order payment",
+          order_id: data.razorpayOrderId,
+          prefill: {
+            name: profile.name,
+            email: profile.email,
+            contact: profile.phone,
+          },
+          notes: {
+            orderId: data.orderId,
+          },
+          theme: {
+            color: "#fbbf24",
+          },
+          handler: async (response) => {
+            setLoading(true);
+            setError("");
+            try {
+              const verifyRes = await fetch("/api/razorpay/verify", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  orderId: data.orderId,
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                }),
+              });
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) throw new Error(verifyData.error || "Payment verification failed");
+
+              clearCart();
+              setSuccess("Payment confirmed. Your order is placed.");
+            } catch (err) {
+              setError(err.message || "Payment verification failed");
+            } finally {
+              setLoading(false);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              setLoading(false);
+            },
+          },
+        };
+
+        const razorpay = new window.Razorpay(options);
+        razorpay.on("payment.failed", (resp) => {
+          setError(resp?.error?.description || "Payment failed");
+          setLoading(false);
+        });
+        razorpay.open();
+        return;
       }
+
 
       const amount = Number(summary.total || 0).toFixed(2);
       const note = encodeURIComponent("Plantity Order Payment");
@@ -415,25 +521,46 @@ export default function CheckoutPage() {
                 <>
                   <button
                     type="button"
-                    onClick={() => setMethod("stripe")}
+                    onClick={() => setMethod("razorpay")}
                     className="flex w-full items-center justify-between rounded-2xl p-5 text-left transition-all card-lift"
                     style={{
-                      background: method === "stripe" ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)",
-                      border: method === "stripe" ? "1px solid rgba(251,191,36,0.45)" : "1px solid rgba(255,255,255,0.07)",
+                      background: method === "razorpay" ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)",
+                      border: method === "razorpay" ? "1px solid rgba(251,191,36,0.45)" : "1px solid rgba(255,255,255,0.07)",
                     }}
                   >
                     <div>
-                      <p className="text-lg font-black" style={{ color: "#f5e6d3" }}>Stripe Card / UPI (Stripe)</p>
+                      <p className="text-lg font-black" style={{ color: "#f5e6d3" }}>Razorpay Checkout</p>
                       <p className="text-xs" style={{ color: "rgba(245,230,211,0.5)" }}>
-                        Instant confirmation. Redirects to Stripe checkout.
+                        Instant confirmation. Card, UPI, and wallet supported.
                       </p>
                     </div>
-                    <span className="text-xs font-semibold" style={{ color: method === "stripe" ? "#fbbf24" : "rgba(245,230,211,0.45)" }}>
-                      {method === "stripe" ? "Selected" : "Choose"}
+                    <span className="text-xs font-semibold" style={{ color: method === "razorpay" ? "#fbbf24" : "rgba(245,230,211,0.45)" }}>
+                      {method === "razorpay" ? "Selected" : "Choose"}
                     </span>
                   </button>
 
+                  
+
                   <button
+                    type="button"
+                    onClick={() => setMethod("cod")}
+                    className="flex w-full items-center justify-between rounded-2xl p-5 text-left transition-all card-lift"
+                    style={{
+                      background: method === "cod" ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)",
+                      border: method === "cod" ? "1px solid rgba(251,191,36,0.45)" : "1px solid rgba(255,255,255,0.07)",
+                    }}
+                  >
+                    <div>
+                      <p className="text-lg font-black" style={{ color: "#f5e6d3" }}>Cash On Delivery</p>
+                      <p className="text-xs" style={{ color: "rgba(245,230,211,0.5)" }}>
+                        Pay when your order arrives.
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold" style={{ color: method === "cod" ? "#fbbf24" : "rgba(245,230,211,0.45)" }}>
+                      {method === "cod" ? "Selected" : "Choose"}
+                    </span>
+                  </button>
+<button
                     type="button"
                     onClick={() => setMethod("upi")}
                     className="flex w-full items-center justify-between rounded-2xl p-5 text-left transition-all card-lift"

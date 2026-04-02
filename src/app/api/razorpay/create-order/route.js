@@ -1,16 +1,11 @@
-﻿import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import { NextResponse } from "next/server";
+import Razorpay from "razorpay";
+import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { requireAuth } from "@/lib/auth";
-import { ObjectId } from "mongodb";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-06-20",
-});
-
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const PROFILE_FIELDS = ["name", "email", "phone", "address", "city", "pincode", "notes"];
 
 function initTimeline(status, note, user) {
@@ -24,6 +19,20 @@ function initTimeline(status, note, user) {
   ];
 }
 
+function getRazorpayClient() {
+  const keyId = process.env.RAZORPAY_KEY_ID || "";
+  const keySecret = process.env.RAZORPAY_KEY_SECRET || "";
+
+  if (!keyId || !keySecret) {
+    return null;
+  }
+
+  return new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  });
+}
+
 export async function POST(req) {
   const { user, response } = requireAuth(req);
   if (response) return response;
@@ -35,12 +44,18 @@ export async function POST(req) {
     const delivery = body?.delivery || {};
     const providedOrderId = body?.orderId || null;
 
-    if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json({ error: "Stripe is not configured" }, { status: 500 });
+    const razorpay = getRazorpayClient();
+    if (!razorpay) {
+      return NextResponse.json({ error: "Razorpay is not configured" }, { status: 500 });
     }
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Items are required" }, { status: 400 });
+    }
+
+    const amountValue = Number(totals.total || 0);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
     const db = await getDb();
@@ -54,7 +69,7 @@ export async function POST(req) {
         items,
         totals,
         delivery,
-        paymentMethod: "stripe",
+        paymentMethod: "razorpay",
         paymentStatus: "pending",
         orderStatus: "placed",
         status: "payment_pending",
@@ -78,34 +93,29 @@ export async function POST(req) {
       }
     }
 
-    const lineItems = items.map((item) => ({
-      price_data: {
-        currency: "inr",
-        product_data: {
-          name: item.name,
-        },
-        unit_amount: Math.round(Number(item.price) * 100),
-      },
-      quantity: Number(item.quantity) || 1,
-    }));
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: lineItems,
-      customer_email: user.email || undefined,
-      success_url: `${appUrl}/profile?status=success&orderId=${orderId}`,
-      cancel_url: `${appUrl}/cart?status=cancelled&orderId=${orderId}`,
-      metadata: { orderId, userId: user.sub },
+    const amount = Math.round(amountValue * 100);
+    const rpOrder = await razorpay.orders.create({
+      amount,
+      currency: "INR",
+      receipt: orderId,
+      notes: { orderId, userId: user.sub },
     });
 
     await db.collection("orders").updateOne(
       { _id: new ObjectId(orderId) },
-      { $set: { stripeSessionId: session.id, paymentStatus: "pending", status: "payment_pending" } }
+      { $set: { razorpayOrderId: rpOrder.id, paymentStatus: "pending", status: "payment_pending" } }
     );
 
-    return NextResponse.json({ ok: true, url: session.url, sessionId: session.id, orderId });
+    return NextResponse.json({
+      ok: true,
+      orderId,
+      razorpayOrderId: rpOrder.id,
+      amount,
+      currency: "INR",
+      keyId: process.env.RAZORPAY_KEY_ID,
+    });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to create checkout" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create Razorpay order" }, { status: 500 });
   }
 }
