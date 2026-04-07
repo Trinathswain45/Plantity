@@ -1,12 +1,27 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="plantityGradient" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f59e0b" />
-      <stop offset="1" stop-color="#f97316" />
+    <linearGradient id="plantity-frame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="35%" stop-color="#2dd4bf"/>
+      <stop offset="70%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#f5c978"/>
+    </linearGradient>
+    <radialGradient id="plantity-glow" cx="0.25" cy="0.2" r="0.9">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="plantity-ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="55%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#f5c978"/>
     </linearGradient>
   </defs>
-  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#plantityGradient)" />
-  <circle cx="32" cy="32" r="18" fill="none" stroke="#0a0705" stroke-width="2.5" opacity="0.85" />
-  <path d="M18 34c3.5 10 24.5 10 28 0" stroke="#0a0705" stroke-width="3" stroke-linecap="round" />
-  <path d="M30 20c-6 4-8 12-3 18 6-2 12-10 10-16-2-4-5-4-7-2z" fill="#0a0705" opacity="0.9" />
+  <rect x="14" y="14" width="228" height="228" rx="64" fill="url(#plantity-frame)"/>
+  <rect x="26" y="26" width="204" height="204" rx="56" fill="#0b1220"/>
+  <rect x="26" y="26" width="204" height="204" rx="56" fill="url(#plantity-glow)"/>
+  <circle cx="128" cy="128" r="72" stroke="url(#plantity-ring)" stroke-width="10"/>
+  <circle cx="128" cy="128" r="52" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+  <path d="M110 172V84h40c21 0 35 13 35 32 0 19-14 32-35 32h-18v24h-22Zm22-52h18c9 0 15-6 15-14 0-8-6-14-15-14h-18v28Z" fill="#f2fbff"/>
+  <path d="M162 92c10 2 19 10 20 22 2 16-12 30-30 32 4-8 3-18-3-26 4-16 7-24 13-28Z" fill="#67e8f9" opacity="0.85"/>
+  <path d="M108 186h96" stroke="#f2fbff" stroke-width="10" stroke-linecap="round" opacity="0.3"/>
 </svg>

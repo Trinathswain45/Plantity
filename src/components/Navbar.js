@@ -42,7 +42,7 @@ export default function Navbar() {
     if (profileName?.trim()) return profileName.trim();
     if (user?.email) return user.email.split("@")[0];
     if (user?.phone) return user.phone;
-    return "User";
+    return "Guest";
   }, [profileName, user?.email, user?.phone]);
 
   const profileInitial = displayName.trim().charAt(0).toUpperCase();
@@ -54,7 +54,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.07]" style={{ background: "rgba(10,7,5,0.85)", backdropFilter: "blur(24px)" }}>
+    <header className="sticky top-0 z-50 nav-shell">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
 
         {/* Logo */}
@@ -65,38 +65,39 @@ export default function Navbar() {
               alt="Plantity logo"
               width={44}
               height={44}
-              className="h-11 w-11 rounded-2xl shadow-lg shadow-orange-500/20"
+              className="h-11 w-11 rounded-2xl shadow-xl shadow-black/50 logo-anim"
               priority
             />
           </div>
           <div>
-            <p className="text-[1.1rem] font-black tracking-wide" style={{ color: "#f5e6d3" }}>
+            <p className="text-[1.1rem] font-semibold tracking-wide" style={{ color: "#efe7d6" }}>
               Plantity
             </p>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.15em]" style={{ color: "rgba(251,191,36,0.7)" }}>
-              Premium Delivery
+            <p className="text-[0.6rem] font-semibold uppercase tracking-[0.24em]" style={{ color: "rgba(99,102,241,0.8)" }}>
+              Atelier Delivery
             </p>
           </div>
         </Link>
 
         {/* Nav links */}
-        <nav className="flex items-center gap-1 rounded-2xl p-1" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+        <nav className="hidden items-center gap-1 rounded-full p-1 md:flex"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
           {links.map(({ href, label, count }) => {
             const active = pathname === href;
             return (
               <Link
                 key={href}
                 href={href}
-                className="relative rounded-xl px-5 py-2 text-sm font-semibold transition-all duration-200"
+                className="relative rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200"
                 style={active
-                  ? { background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#0a0705", fontWeight: 800 }
-                  : { color: "rgba(245,230,211,0.65)" }
+                  ? { background: "linear-gradient(135deg,#67e8f9,#2dd4bf,#6366f1)", color: "#0b0b0d", fontWeight: 800 }
+                  : { color: "rgba(239,231,214,0.7)" }
                 }
               >
                 {label}
                 {count > 0 && (
                   <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black"
-                    style={{ background: active ? "rgba(0,0,0,0.25)" : "linear-gradient(135deg,#f59e0b,#f97316)", color: active ? "#0a0705" : "#0a0705" }}>
+                    style={{ background: active ? "rgba(0,0,0,0.25)" : "linear-gradient(135deg,#67e8f9,#2dd4bf)", color: "#0b0b0d" }}>
                     {count}
                   </span>
                 )}
@@ -106,22 +107,23 @@ export default function Navbar() {
         </nav>
 
         {/* Right side CTA */}
-        <div className="hidden items-center gap-3 md:flex">
-          <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold" style={{ background: "rgba(251,191,36,0.08)", color: "rgba(251,191,36,0.9)", border: "1px solid rgba(251,191,36,0.15)" }}>
+        <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold md:flex chip-glow"
+            style={{ background: "rgba(99,102,241,0.12)", color: "#67e8f9", border: "1px solid rgba(99,102,241,0.2)" }}>
             <span className="h-2 w-2 rounded-full bg-green-400 pulse-glow inline-block" />
             Open - Delivers in 25-35 min
           </div>
           {user ? (
-            <div className="flex items-center gap-3 rounded-2xl px-3 py-2 text-xs font-semibold"
-              style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)" }}>
+            <div className="flex items-center gap-3 rounded-full px-3 py-2 text-xs font-semibold"
+              style={{ background: "rgba(255,255,255,0.06)", color: "#efe7d6", border: "1px solid rgba(255,255,255,0.12)" }}>
               <div className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-black"
-                style={{ background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#0a0705" }}>
+                style={{ background: "linear-gradient(135deg,#67e8f9,#2dd4bf)", color: "#0b0b0d" }}>
                 {profileInitial}
               </div>
               <div className="flex flex-col">
-                <span style={{ color: "#f5e6d3" }}>{displayName}</span>
+                <span>{displayName}</span>
                 <button onClick={signOut} className="text-[10px] font-bold uppercase"
-                  style={{ color: "rgba(245,230,211,0.7)" }}>
+                  style={{ color: "rgba(239,231,214,0.7)" }}>
                   Sign out
                 </button>
               </div>
@@ -136,3 +138,8 @@ export default function Navbar() {
     </header>
   );
 }
+
+
+
+
+

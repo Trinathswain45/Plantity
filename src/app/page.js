@@ -7,25 +7,24 @@ import { categories, foodItems } from "@/data/FoodItems";
 
 const FEATURES = [
   {
-    icon: "DEL",
-    title: "Lightning Fast Delivery",
-    desc: "Hot food at your door in 25-35 minutes, every time.",
-    color: "rgba(249,115,22,0.12)",
-    border: "rgba(249,115,22,0.2)",
+    icon: "01",
+    title: "Speedy Delivery",
+    desc: "Fresh meals on your doorstep in 25-35 minutes.",
   },
   {
-    icon: "CHEF",
-    title: "Chef-Crafted Recipes",
-    desc: "Every dish is made by trained chefs using premium ingredients.",
-    color: "rgba(251,191,36,0.1)",
-    border: "rgba(251,191,36,0.18)",
+    icon: "02",
+    title: "Fresh Ingredients",
+    desc: "Chef-picked produce and premium proteins, daily.",
   },
   {
-    icon: "LIVE",
-    title: "Live Order Tracking",
-    desc: "Track your order from kitchen to doorstep in real time.",
-    color: "rgba(234,179,8,0.1)",
-    border: "rgba(234,179,8,0.18)",
+    icon: "03",
+    title: "Live Order Track",
+    desc: "See every step from kitchen to doorstep.",
+  },
+  {
+    icon: "04",
+    title: "Smart Offers",
+    desc: "Member savings and surprise drops every week.",
   },
 ];
 
@@ -49,14 +48,13 @@ export default function Home() {
         <HeroShowcase />
 
         {/* Features row */}
-        <div className="grid gap-4 sm:grid-cols-3 fade-up-d1">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 fade-up-d1">
           {FEATURES.map((f) => (
-            <div key={f.title} className="flex items-start gap-4 rounded-2xl p-5 card-lift"
-              style={{ background: f.color, border: `1px solid ${f.border}` }}>
-              <span className="text-3xl">{f.icon}</span>
+            <div key={f.title} className="feature-card card-lift">
+              <span className="feature-icon">{f.icon}</span>
               <div>
-                <p className="font-bold text-sm" style={{ color: "#f5e6d3" }}>{f.title}</p>
-                <p className="mt-1 text-xs leading-relaxed" style={{ color: "rgba(245,230,211,0.55)" }}>{f.desc}</p>
+                <p className="feature-title">{f.title}</p>
+                <p className="feature-desc">{f.desc}</p>
               </div>
             </div>
           ))}
@@ -67,12 +65,11 @@ export default function Home() {
           {/* Section header */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "rgba(251,191,36,0.7)" }}>
-                Our Menu
-              </p>
-              <h2 className="text-3xl font-black md:text-4xl" style={{ color: "#f5e6d3" }}>
-                What Would You Like?
+              <p className="section-eyebrow">Our Menu</p>
+              <h2 className="section-title">
+                Curated Plates, Crafted Daily
               </h2>
+              <p className="section-subtitle mt-2">Explore favorites, seasonal highlights, and chef specials.</p>
             </div>
 
             {/* Search */}
@@ -92,7 +89,7 @@ export default function Home() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all duration-200 ${
+                className={`rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-wide transition-all duration-200 ${
                   activeCategory === cat ? "cat-active" : "cat-idle"
                 }`}
               >
@@ -109,14 +106,14 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl py-20 text-center"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="rounded-3xl py-20 text-center"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <p className="text-4xl mb-3">NO</p>
-              <p className="font-semibold" style={{ color: "rgba(245,230,211,0.6)" }}>
+              <p className="font-semibold" style={{ color: "rgba(239,231,214,0.6)" }}>
                 No dishes match your search.
               </p>
               <button onClick={() => { setQuery(""); setActiveCategory("All"); }}
-                className="mt-4 text-sm font-bold underline underline-offset-2" style={{ color: "#fbbf24" }}>
+                className="mt-4 text-sm font-bold underline underline-offset-2" style={{ color: "#a7f3d0" }}>
                 Clear filters
               </button>
             </div>
@@ -124,24 +121,26 @@ export default function Home() {
         </section>
 
         {/* Bottom CTA banner */}
-        <section className="relative overflow-hidden rounded-3xl px-8 py-12 text-center fade-up"
+        <section className="relative overflow-hidden rounded-[2.5rem] px-8 py-12 text-center fade-up"
           style={{
-            background: "linear-gradient(135deg, rgba(180,83,9,0.25) 0%, rgba(120,53,15,0.15) 100%)",
-            border: "1px solid rgba(251,191,36,0.15)",
+            background: "linear-gradient(135deg, rgba(15,118,110,0.22) 0%, rgba(11,59,58,0.16) 100%)",
+            border: "1px solid rgba(15,118,110,0.2)",
           }}>
           <div className="pointer-events-none absolute inset-0"
-            style={{ background: "radial-gradient(circle at 50% 50%, rgba(251,191,36,0.06) 0%, transparent 70%)" }} />
-          <h2 className="relative text-3xl font-black" style={{ color: "#f5e6d3" }}>
-            Hungry? Order in <span className="gradient-text">30 Minutes</span>
+            style={{ background: "radial-gradient(circle at 50% 50%, rgba(15,118,110,0.18) 0%, transparent 70%)" }} />
+          <h2 className="relative text-3xl font-semibold" style={{ color: "#efe7d6" }}>
+            Join the <span className="gradient-text">Plantity Atelier</span>
           </h2>
-          <p className="relative mt-2 text-sm" style={{ color: "rgba(245,230,211,0.55)" }}>
-            Fresh, hot, and right at your doorstep. Sign up for exclusive member deals.
+          <p className="relative mt-2 text-sm" style={{ color: "rgba(239,231,214,0.6)" }}>
+            Priority access, signature drops, and member-only pairings. Delivered like a five-star experience.
           </p>
-          <a href="#menu" className="btn-amber relative mt-6 inline-block px-8 py-3.5 text-sm font-black shadow-xl shadow-orange-500/30">
-            Order Now
+          <a href="#menu" className="btn-amber relative mt-6 inline-block px-8 py-3.5 text-sm font-black">
+            Become a Member
           </a>
         </section>
       </div>
     </main>
   );
 }
+
+

@@ -1,4 +1,4 @@
-import { Outfit, Sora } from "next/font/google";
+import { Manrope, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
 import Navbar from "@/components/Navbar";
@@ -6,8 +6,8 @@ import Footer from "@/components/Footer";
 import { AuthProvider } from "@/components/AuthContext";
 import AuthModal from "@/components/AuthModal";
 
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
-const sora = Sora({ subsets: ["latin"], variable: "--font-sora" });
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-body" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata = {
   title: "Plantity | Premium Food Ordering",
@@ -21,8 +21,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${outfit.variable} ${sora.variable} antialiased`}
-        style={{ background: "#0a0705", color: "#f5e6d3" }}
+        className={`${manrope.variable} ${playfair.variable} antialiased`}
+        style={{ background: "#0b0b0d", color: "#efe7d6" }}
       >
         <AuthProvider>
           <CartProvider>

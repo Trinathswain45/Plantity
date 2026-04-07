@@ -12,7 +12,7 @@ function StarRating({ rating }) {
   });
 
   return (
-    <div className="flex items-center gap-1 text-xs" style={{ color: "rgba(251,191,36,0.8)" }}>
+    <div className="flex items-center gap-1 text-xs" style={{ color: "rgba(99,102,241,0.8)" }}>
       <span className="font-mono" aria-label={`Rating ${rating.toFixed(1)} out of 5`}>
         {stars.join("")}
       </span>
@@ -35,14 +35,10 @@ export default function FoodCard({ item, index = 0 }) {
 
   return (
     <article
-      className="group relative overflow-hidden rounded-2xl card-lift fade-up"
-      style={{
-        background: "linear-gradient(160deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        animationDelay: `${index * 80}ms`
-      }}
+      className="group relative overflow-hidden rounded-3xl card-lift fade-up card-frame card-tilt"
+      style={{ animationDelay: `${index * 80}ms` }}
     >
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-52 overflow-hidden">
         <Image
           src={item.image}
           alt={item.name}
@@ -50,32 +46,31 @@ export default function FoodCard({ item, index = 0 }) {
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           loading="lazy"
-          style={{ transition: "transform 0.7s ease" }}
         />
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to top, rgba(10,7,5,0.85) 0%, rgba(10,7,5,0.1) 55%, transparent 100%)"
+              "linear-gradient(to top, rgba(11,11,13,0.9) 0%, rgba(11,11,13,0.2) 55%, transparent 100%)"
           }}
         />
         <span
           className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
           style={{
-            background: "rgba(10,7,5,0.7)",
-            color: "#fbbf24",
-            border: "1px solid rgba(251,191,36,0.3)",
-            backdropFilter: "blur(8px)"
+            background: "rgba(11,11,13,0.7)",
+            color: "#67e8f9",
+            border: "1px solid rgba(99,102,241,0.3)",
+            backdropFilter: "blur(10px)"
           }}
         >
           {item.category}
         </span>
         <span
-          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md"
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full"
           style={{
-            background: "rgba(10,7,5,0.7)",
-            border: "2px solid #22c55e",
-            backdropFilter: "blur(8px)"
+            background: "rgba(11,11,13,0.75)",
+            border: "1px solid rgba(99,102,241,0.4)",
+            backdropFilter: "blur(10px)"
           }}
         >
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500" />
@@ -83,8 +78,8 @@ export default function FoodCard({ item, index = 0 }) {
         <span
           className="absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[10px] font-semibold"
           style={{
-            background: "rgba(10,7,5,0.7)",
-            color: "rgba(245,230,211,0.85)",
+            background: "rgba(11,11,13,0.7)",
+            color: "rgba(239,231,214,0.85)",
             backdropFilter: "blur(8px)"
           }}
         >
@@ -92,14 +87,14 @@ export default function FoodCard({ item, index = 0 }) {
         </span>
       </div>
 
-      <div className="space-y-3 p-4">
+      <div className="space-y-3 p-5">
         <div>
-          <h3 className="text-base font-bold leading-snug" style={{ color: "#f5e6d3" }}>
+          <h3 className="text-base font-semibold leading-snug" style={{ color: "#efe7d6" }}>
             {item.name}
           </h3>
           <p
             className="mt-1 text-xs leading-relaxed line-clamp-2"
-            style={{ color: "rgba(245,230,211,0.5)" }}
+            style={{ color: "rgba(239,231,214,0.55)" }}
           >
             {item.description}
           </p>
@@ -109,9 +104,9 @@ export default function FoodCard({ item, index = 0 }) {
 
         <div className="flex items-center justify-between pt-1">
           <div>
-            <p className="text-xl font-black gradient-text">₹ {item.price}</p>
+            <p className="price-text">Rs {item.price}</p>
             {inCart && (
-              <p className="text-[10px] font-semibold" style={{ color: "rgba(251,191,36,0.7)" }}>
+              <p className="text-[10px] font-semibold" style={{ color: "rgba(99,102,241,0.7)" }}>
                 {inCart.quantity} in cart
               </p>
             )}
@@ -119,15 +114,15 @@ export default function FoodCard({ item, index = 0 }) {
 
           <button
             onClick={handleAdd}
-            className="relative overflow-hidden rounded-xl px-4 py-2.5 text-xs font-black transition-all duration-300"
+            className="relative overflow-hidden rounded-full px-4 py-2.5 text-xs font-black transition-all duration-300"
             style={{
               background: adding
                 ? "linear-gradient(135deg,#22c55e,#16a34a)"
-                : "linear-gradient(135deg,#f59e0b,#f97316)",
-              color: "#0a0705",
+                : "linear-gradient(135deg,#67e8f9,#2dd4bf,#6366f1)",
+              color: "#0b0b0d",
               boxShadow: adding
-                ? "0 4px 20px rgba(34,197,94,0.4)"
-                : "0 4px 20px rgba(249,115,22,0.35)",
+                ? "0 6px 24px rgba(34,197,94,0.45)"
+                : "0 6px 24px rgba(99,102,241,0.35)",
               transform: adding ? "scale(0.96)" : "scale(1)"
             }}
           >
@@ -138,3 +133,8 @@ export default function FoodCard({ item, index = 0 }) {
     </article>
   );
 }
+
+
+
+
+
